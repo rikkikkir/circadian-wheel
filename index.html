@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Circadian Wheel</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  color-scheme:dark;
+  --bg:#111418;--bg2:#171b21;--bg3:#1d222a;--bg4:#202632;
+  --gold:#c9a84c;--gold2:#e8c978;
+  --warm:#f3efe2;--dim:#a09a8e;--dim2:#6e6860;--dim3:#484440;
+  --indigo:#2d3070;--indigo2:#3d42a0;
+  --cream:#efe8cf;--cream2:#d8cfad;
+  --r:8px;--r-card:20px;
+  --divider:rgba(239,232,207,0.12);
+}
+body{background:var(--bg);color:var(--warm);font-family:'Inter',sans-serif;font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+h1{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,4vw,2.4rem);font-weight:400;color:var(--gold);letter-spacing:-.01em}
+.container{max-width:640px;margin:0 auto;padding:0 22px}
+
+/* Header */
+.page-hdr{padding:30px 0 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.tagline{color:var(--dim);font-size:.9rem;margin-top:6px}
+
+/* Wheel section */
+.wheel-section{margin-bottom:12px}
+.wheel-wrap{position:relative;margin:0 auto;max-width:480px}
+#sundial-svg{width:100%;display:block}
+.no-state-prompt{text-align:center;padding:52px 20px;color:var(--dim2);font-size:.9rem;
+  border:1px solid var(--divider);border-radius:var(--r-card);max-width:480px;margin:0 auto 24px}
+.no-state-prompt strong{display:block;font-size:1.05rem;color:var(--dim);margin-bottom:8px;font-family:'Playfair Display',serif}
+
+/* Stats card */
+.now-card{background:var(--bg3);border:1px solid var(--divider);border-radius:14px;
+  padding:16px 20px;max-width:480px;margin:0 auto 24px}
+.nc-row{display:flex;justify-content:space-between;align-items:baseline;gap:20px;padding:5px 0}
+.nc-lbl{font-size:.82rem;color:var(--dim);white-space:nowrap}
+.nc-val{font-size:1.02rem;font-weight:500;color:var(--warm);text-align:right}
+
+/* Narrative form */
+.narrative-form{max-width:480px;margin:0 auto 32px}
+.narrative-line{font-size:1.1rem;color:var(--warm);line-height:2.6;margin-bottom:2px}
+
+/* Inline inputs — gold underline only */
+.inline-date,.inline-time,.inline-number{
+  background:transparent;border:none;border-bottom:1.5px solid var(--gold);
+  color:var(--gold);font-family:'Inter',sans-serif;font-size:1.1rem;
+  padding:0 3px 1px;cursor:pointer;outline:none;color-scheme:dark;vertical-align:baseline
+}
+.inline-date{width:148px}
+.inline-time{width:90px}
+.inline-number{width:52px;text-align:center;-moz-appearance:textfield}
+.inline-number::-webkit-outer-spin-button,
+.inline-number::-webkit-inner-spin-button{-webkit-appearance:none}
+
+/* Tau presets */
+.tau-presets{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 20px}
+.preset-btn{background:transparent;border:1px solid var(--dim3);border-radius:4px;
+  color:var(--dim2);font-size:.73rem;padding:3px 10px;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:all .15s}
+.preset-btn:hover{border-color:var(--dim);color:var(--warm)}
+.preset-btn.active{border-color:var(--gold);color:var(--gold)}
+
+/* Awake/sleep slider */
+.sleep-split{margin-bottom:14px}
+.sleep-split-labels{display:flex;justify-content:space-between;font-size:.85rem;color:var(--dim);margin-bottom:8px}
+.sleep-slider{
+  -webkit-appearance:none;width:100%;height:4px;
+  border-radius:2px;background:var(--bg3);outline:none;cursor:pointer
+}
+.sleep-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--gold);cursor:pointer;box-shadow:0 0 6px rgba(201,168,76,.4)
+}
+.sleep-slider::-moz-range-thumb{
+  width:18px;height:18px;border-radius:50%;background:var(--gold);
+  cursor:pointer;border:none;box-shadow:0 0 6px rgba(201,168,76,.4)
+}
+
+/* Location line */
+.location-line{font-size:.8rem;color:var(--dim2);margin-top:6px;line-height:1.6}
+.location-name{color:var(--dim)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:var(--r);
+  font-family:'Inter',sans-serif;font-size:.84rem;font-weight:500;cursor:pointer;border:none;transition:all .2s}
+.btn-outline{background:transparent;color:var(--gold);border:1px solid var(--gold)}
+.btn-outline:hover{background:rgba(201,168,76,.1)}
+
+/* Explainer */
+.explainer{border:1px solid var(--divider);border-radius:var(--r);max-width:480px;margin:0 auto 32px;overflow:hidden}
+.explainer summary{padding:14px 18px;cursor:pointer;font-size:.88rem;color:var(--dim);
+  list-style:none;user-select:none;display:flex;align-items:center;gap:8px}
+.explainer summary::-webkit-details-marker{display:none}
+.explainer summary::before{content:'▶';font-size:.65em;color:var(--dim3)}
+.explainer[open] summary::before{content:'▼'}
+.explainer-body{padding:0 18px 18px;font-size:.87rem;color:var(--dim);line-height:1.8;
+  border-top:1px solid var(--divider)}
+.explainer-body p{margin-top:14px}
+.explainer-body a{color:var(--gold);text-decoration:none}
+.explainer-body a:hover{text-decoration:underline}
+
+/* Footer */
+.page-footer{padding:20px 0;border-top:1px solid #252525;text-align:center;font-size:.76rem;color:var(--dim2);margin-top:20px}
+.page-footer a{color:var(--gold);text-decoration:none}
+
+@media(max-width:480px){
+  .page-hdr{flex-direction:column}
+  .tau-presets{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="page-hdr">
+    <div>
+      <h1>Circadian Wheel</h1>
+      <p class="tagline">Enter your wake time. See your cycle.</p>
+    </div>
+    <button class="btn btn-outline" id="share-btn">⎘ Share</button>
+  </div>
+
+  <!-- Narrative form -->
+  <div class="narrative-form" id="narrative-form">
+    <p class="narrative-line">
+      I woke on
+      <input type="date" id="wake-date" class="inline-date" />
+      at
+      <input type="time" id="wake-time" class="inline-time" />.
+    </p>
+    <p class="narrative-line">
+      My day is
+      <input type="number" id="tau-input" class="inline-number"
+             min="23.0" max="27.0" step="0.1" value="24.0" />
+      hours long.
+    </p>
+    <div class="tau-presets">
+      <button class="preset-btn active" data-tau="24.0">Standard (24h)</button>
+      <button class="preset-btn" data-tau="24.5">Slightly delayed (24.5h)</button>
+      <button class="preset-btn" data-tau="25.4">Non-24 · like Rikki (25.4h)</button>
+    </div>
+    <div class="sleep-split">
+      <div class="sleep-split-labels">
+        <span id="awake-label">Awake 16h</span>
+        <span id="asleep-label">Asleep 8h</span>
+      </div>
+      <input type="range" id="awake-slider" class="sleep-slider"
+             min="6" max="22" step="0.25" value="16" />
+    </div>
+    <p class="location-line" id="location-line" style="display:none">
+      Sunrise and sunset times are based on your location of:
+      <span id="location-name" class="location-name"></span>
+    </p>
+  </div>
+
+  <!-- Empty state prompt -->
+  <div class="no-state-prompt" id="no-state-prompt">
+    <strong>Your wheel is waiting.</strong>
+    Enter your wake time above to generate your personalized circadian wheel.
+  </div>
+
+  <!-- Wheel: shown only when state exists -->
+  <div class="wheel-section" id="wheel-section" style="display:none">
+    <div class="wheel-wrap">
+      <svg id="sundial-svg" viewBox="0 0 440 440" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="pie-sleep-stars" x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">
+            <path d="M11,3.7 L12.9,8.4 L17.8,8.7 L13.7,12.0 L15.2,16.9 L11,14.2 L6.7,16.7 L8.2,12.1 L4.2,8.9 L9.1,8.5 Z" fill="none" stroke="rgba(140,215,200,0.60)" stroke-width="1.15" stroke-linejoin="round" stroke-linecap="round"/>
+            <path d="M10.8,4.1 L12.7,8.7 L17.6,9.1 L13.5,12.3 L15.0,17.1 L10.8,14.5 L6.5,17.0 L8.0,12.4 L4.0,9.2 L8.9,8.8 Z" fill="none" stroke="rgba(140,215,200,0.22)" stroke-width="0.7" stroke-linejoin="round" stroke-linecap="round"/>
+          </pattern>
+        </defs>
+        <g id="pie-ring"></g>
+        <circle cx="220" cy="220" r="170" fill="none" stroke="#333" stroke-width="1"/>
+        <g id="outer-clock"></g>
+        <text x="220" y="23" fill="#c9a84c" font-size="12" font-weight="600" text-anchor="middle" dominant-baseline="middle" font-family="Inter,sans-serif">Wake</text>
+        <g id="outer-now">
+          <circle id="orn-dot" r="4.5" fill="rgba(255,255,255,0.9)" stroke="#1a1a1a" stroke-width="0.8"/>
+          <text id="orn-lbl" fill="rgba(255,255,255,0.85)" font-size="8.5" font-weight="500" text-anchor="middle" dominant-baseline="middle" font-family="Inter,sans-serif"></text>
+        </g>
+        <circle cx="220" cy="220" r="5" fill="#c9a84c"/>
+        <g id="dial-hand">
+          <line id="hand-line" x1="220" y1="220" x2="220" y2="76" stroke="#c9a84c" stroke-width="3" stroke-linecap="round"/>
+          <circle id="hand-dot" cx="220" cy="76" r="6" fill="#c9a84c"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Stats card: shown only when state exists -->
+  <div class="now-card" id="stats-card" style="display:none"></div>
+
+  <details class="explainer">
+    <summary>What is a circadian wheel?</summary>
+    <div class="explainer-body">
+      <p>Your internal clock runs on a cycle called the tau (Greek τ). For most people it's very
+      close to 24 hours — daylight keeps it synchronized, so you wake up at roughly the same
+      time each morning.</p>
+      <p>For some people, the clock runs longer: 24.5h, 25h, or more. Without external anchors,
+      sleep drifts progressively later each day, cycling through all 24 hours of the clock
+      roughly every two to six weeks. This is Non-24-Hour Sleep-Wake Disorder.</p>
+      <p>The wheel shows where you are in your personal cycle right now. The outer ring maps your
+      cycle against the 24-hour clock. The colors reflect the actual sky at each hour — dawn,
+      daylight, dusk, night.</p>
+      <p>Rikki Delaine, who built this tool, has a measured tau of 25.40 hours — 84 minutes of
+      drift per day. Their personal real-time tracking page:
+      <a href="https://rikkikkir.github.io/circadian" target="_blank" rel="noopener">rikkikkir.github.io/circadian</a></p>
+    </div>
+  </details>
+
+</div><!-- /container -->
+
+<div class="page-footer">
+  <a href="https://rikkikkir.github.io/circadian" target="_blank" rel="noopener">Rikki's personal circadian tracker</a> ·
+  Built by Rikki Delaine
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const CONFIG = {
+  tau:    24.0,
+  awakeH: 16.0,
+  tz:     Intl.DateTimeFormat().resolvedOptions().timeZone,
+  lat:    40.0,
+  lng:   -75.0,
+};
+
+let ANCHOR_MS         = null;
+let _liveTimer        = null;
+let _awakeManuallySet = false;
+
+// ── Local time helpers ──────────────────────────────────────────────────────
+const _localFmt = new Intl.DateTimeFormat('en-US', {
+  timeZone: CONFIG.tz,
+  year:'numeric', month:'2-digit', day:'2-digit',
+  hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false
+});
+
+function localParts(ms) {
+  const p = {};
+  _localFmt.formatToParts(new Date(ms)).forEach(({type, value}) => {
+    if (type !== 'literal') p[type] = +value;
+  });
+  if (p.hour === 24) p.hour = 0;
+  return p;
+}
+
+function localHour(ms) {
+  const { hour, minute, second } = localParts(ms);
+  return hour + minute / 60 + second / 3600;
+}
+
+function msToLocalDateTime(ms) {
+  const p = localParts(ms);
+  const dateStr = `${p.year}-${String(p.month).padStart(2,'0')}-${String(p.day).padStart(2,'0')}`;
+  const timeStr = `${String(p.hour).padStart(2,'0')}:${String(p.minute).padStart(2,'0')}`;
+  return { dateStr, timeStr };
+}
+
+// ── UTC offset for CONFIG.tz ────────────────────────────────────────────────
+function tzOffsetHours(d) {
+  const u = new Date(d.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const l = new Date(d.toLocaleString('en-US', { timeZone: CONFIG.tz }));
+  return (l - u) / 3600000;
+}
+
+// ── Sunrise / sunset ────────────────────────────────────────────────────────
+function sunTimes(dateObj, lat = CONFIG.lat, lng = CONFIG.lng) {
+  const y   = dateObj.getFullYear();
+  const doy = Math.round((dateObj - new Date(y, 0, 1)) / 86400000) + 1;
+  const latRad = lat * Math.PI / 180;
+  const B    = 2 * Math.PI * (doy - 1) / 365;
+  const decl = 0.006918 - 0.399912*Math.cos(B) + 0.070257*Math.sin(B)
+             - 0.006758*Math.cos(2*B) + 0.000907*Math.sin(2*B);
+  const haRad = Math.acos(Math.max(-1, Math.min(1, -Math.tan(latRad) * Math.tan(decl))));
+  const haH  = haRad * 12 / Math.PI;
+  const eot  = 229.18 * (0.000075 + 0.001868*Math.cos(B) - 0.032077*Math.sin(B)
+                        - 0.014615*Math.cos(2*B) - 0.04089*Math.sin(2*B));
+  const utcOff = tzOffsetHours(dateObj);
+  const lonCorr = (lng - utcOff * 15) / 15;
+  const noon = 12 - lonCorr - eot / 60;
+  return { sunrise: noon - haH, sunset: noon + haH };
+}
+
+// ── Sky color sampler (18-stop gradient, port verbatim) ─────────────────────
+function skyColorAt(h, sunrise, sunset) {
+  const mid = (sunrise + sunset) / 2;
+  const stops = [
+    [0,                            [4,9,24]     ],
+    [sunrise - 1.5,                [4,9,24]     ],
+    [sunrise - 1.0,                [8,15,38]    ],
+    [sunrise - 0.5,                [16,10,54]   ],
+    [sunrise - 0.15,               [38,22,64]   ],
+    [sunrise,                      [122,90,16]  ],
+    [sunrise + 0.4,                [196,152,32] ],
+    [sunrise + 1.2,                [58,104,152] ],
+    [Math.min(sunrise + 2.2, mid), [42,86,144]  ],
+    [Math.max(sunset  - 2.2, mid), [42,86,144]  ],
+    [sunset  - 1.2,                [58,104,152] ],
+    [sunset  - 0.4,                [196,152,32] ],
+    [sunset,                       [122,90,16]  ],
+    [sunset  + 0.15,               [38,22,64]   ],
+    [sunset  + 0.5,                [16,10,54]   ],
+    [sunset  + 1.0,                [8,15,38]    ],
+    [sunset  + 1.5,                [4,9,24]     ],
+    [24,                           [4,9,24]     ],
+  ];
+  const cl = stops.map(([x, c]) => [Math.max(0, Math.min(24, x)), c]);
+  cl.sort((a, b) => a[0] - b[0]);
+  const hc = Math.max(0, Math.min(23.99, h));
+  for (let i = 0; i < cl.length - 1; i++) {
+    if (hc >= cl[i][0] && hc <= cl[i+1][0]) {
+      const sp = cl[i+1][0] - cl[i][0];
+      const t  = sp > 0 ? (hc - cl[i][0]) / sp : 0;
+      const [r1,g1,b1] = cl[i][1], [r2,g2,b2] = cl[i+1][1];
+      return `rgb(${Math.round(r1+t*(r2-r1))},${Math.round(g1+t*(g2-g1))},${Math.round(b1+t*(b2-b1))})`;
+    }
+  }
+  return 'rgb(4,9,24)';
+}
+
+// ── Cycle math ──────────────────────────────────────────────────────────────
+function awakeFromTau(tau) {
+  if (tau <= 24.2) return 16.0;
+  if (tau >= 25.0) return 13.4;
+  const t = (tau - 24.2) / 0.8;
+  return 16.0 + t * (13.4 - 16.0);
+}
+
+function buildSegments(tauH, awakeH) {
+  return [
+    { type: 'waking',   hours: 1.0 },
+    { type: 'open',     hours: awakeH - 2.0 },
+    { type: 'winddown', hours: 1.0 },
+    { type: 'sleep',    hours: tauH - awakeH },
+  ];
+}
+
+function cyclePos(anchorMs, nowMs = Date.now()) {
+  const tau    = CONFIG.tau;
+  const awakeH = CONFIG.awakeH;
+  const TAU_MS = tau * 3600000;
+  const elapsed = nowMs - anchorMs;
+  const cycleN  = Math.floor(elapsed / TAU_MS);
+  const h_into  = (((elapsed % TAU_MS) / 3600000) + tau) % tau;
+  const wakeMs  = anchorMs + cycleN * TAU_MS;
+  const sleepMs = wakeMs + awakeH * 3600000;
+  const nwakeMs = sleepMs + (tau - awakeH) * 3600000;
+  return { cycleN, h_into, wakeMs, sleepMs, nwakeMs, asleep: h_into >= awakeH };
+}
+
+// ── Format helpers ──────────────────────────────────────────────────────────
+function fmtLocalFull(ms) {
+  const s = new Date(ms).toLocaleTimeString('en-US',
+    { hour:'numeric', minute:'2-digit', hour12:true, timeZone: CONFIG.tz });
+  if (s === '12:00 PM') return 'Noon';
+  if (s === '12:00 AM') return 'Midnight';
+  return s;
+}
+
+function fmtLocalCompact(ms) {
+  const s = new Date(ms).toLocaleTimeString('en-US',
+    { hour:'numeric', minute:'2-digit', hour12:true, timeZone: CONFIG.tz });
+  const parts  = s.split(' ');
+  const period = parts[1] || '';
+  const suf    = period[0] || '';
+  const [h, m] = parts[0].split(':');
+  if (h === '12' && m === '00') return period === 'PM' ? 'Noon' : 'Midn';
+  return m === '00' ? `${h}${suf}` : `${h}:${m}${suf}`;
+}
+
+function fmtHM(h) {
+  const hh = Math.floor(h), mm = Math.round((h - hh) * 60);
+  return mm === 0 ? hh + 'h' : hh + 'h ' + mm + 'm';
+}
+
+// ── Slider helpers ──────────────────────────────────────────────────────────
+function updateSleepLabels() {
+  const sleepH = CONFIG.tau - CONFIG.awakeH;
+  const al = document.getElementById('awake-label');
+  const sl = document.getElementById('asleep-label');
+  if (al) al.textContent = `Awake ${fmtHM(CONFIG.awakeH)}`;
+  if (sl) sl.textContent = `Asleep ${fmtHM(sleepH)}`;
+}
+
+function updateSliderBounds() {
+  const slider = document.getElementById('awake-slider');
+  if (!slider) return;
+  const minAwake = Math.max(4, Math.round(CONFIG.tau * 0.25 * 4) / 4);
+  const maxAwake = Math.round(Math.min(CONFIG.tau - 2, CONFIG.tau * 0.875) * 4) / 4;
+  slider.min   = minAwake;
+  slider.max   = maxAwake;
+  slider.value = Math.max(minAwake, Math.min(maxAwake, CONFIG.awakeH));
+}
+
+function onAwakeChange(awakeH) {
+  CONFIG.awakeH      = awakeH;
+  _awakeManuallySet  = true;
+  updateSleepLabels();
+  saveState();
+  if (ANCHOR_MS) renderAll();
+}
+
+// ── Location ─────────────────────────────────────────────────────────────────
+async function reverseGeocode(lat, lng) {
+  try {
+    const resp = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+    );
+    if (!resp.ok) throw new Error();
+    const { address: a = {} } = await resp.json();
+    const place = a.city || a.town || a.village || a.hamlet || a.county || '';
+    const state = a.state || '';
+    return place && state ? `${place}, ${state}` :
+           place || state ||
+           `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? 'N' : 'S'}`;
+  } catch {
+    return `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lng).toFixed(1)}°${lng >= 0 ? 'E' : 'W'}`;
+  }
+}
+
+function showLocationLine(name) {
+  const line = document.getElementById('location-line');
+  const span = document.getElementById('location-name');
+  if (line && span) { span.textContent = name; line.style.display = ''; }
+}
+
+// ── Draw: outer clock ring ──────────────────────────────────────────────────
+function drawOuterClock(anchorMs) {
+  const g = document.getElementById('outer-clock');
+  if (!g) return;
+  const tau = CONFIG.tau;
+  const OCX = 220, OCY = 220, R1 = 174, R2 = 190;
+  const wakeHour = localHour(anchorMs);
+  const DEG = 360 / tau;
+
+  function nToA(n) { return n * DEG; }
+  function pol(deg, r) {
+    const rad = deg * Math.PI / 180;
+    return [+(OCX + r * Math.sin(rad)).toFixed(2), +(OCY - r * Math.cos(rad)).toFixed(2)];
+  }
+  function arcSeg(a1, a2, ri, ro) {
+    const large = (a2 - a1) > 180 ? 1 : 0;
+    const [x1o,y1o] = pol(a1, ro); const [x2o,y2o] = pol(a2, ro);
+    const [x1i,y1i] = pol(a1, ri); const [x2i,y2i] = pol(a2, ri);
+    return `M ${x1o} ${y1o} A ${ro} ${ro} 0 ${large} 1 ${x2o} ${y2o} L ${x2i} ${y2i} A ${ri} ${ri} 0 ${large} 0 ${x1i} ${y1i} Z`;
+  }
+
+  const { sunrise, sunset } = sunTimes(new Date(anchorMs));
+  let html = '';
+
+  // Sub-slice outer ring at 0.25h intervals for accurate sky color
+  const STEP = 0.25;
+  for (let n = 0; n < tau; n += STEP) {
+    const clockH = ((wakeHour + n + STEP / 2) % 24 + 24) % 24;
+    const col = skyColorAt(clockH, sunrise, sunset);
+    const a1 = nToA(n), a2 = nToA(Math.min(n + STEP, tau));
+    html += `<path d="${arcSeg(a1, a2, R1, R2)}" fill="${col}"/>`;
+  }
+
+  html += `<circle cx="${OCX}" cy="${OCY}" r="${R1}" fill="none" stroke="#333" stroke-width="0.5"/>`;
+  html += `<circle cx="${OCX}" cy="${OCY}" r="${R2}" fill="none" stroke="#333" stroke-width="0.5"/>`;
+
+  // Ticks
+  const maxTick = Math.ceil(tau);
+  for (let n = 0; n <= maxTick; n++) {
+    const isMaj = n % 2 === 0;
+    const ang = nToA(n);
+    const [x1,y1] = pol(ang, R2);
+    const [x2,y2] = pol(ang, R2 + (isMaj ? 8 : 4));
+    html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${isMaj ? '#505050' : '#333'}" stroke-width="${isMaj ? 1 : 0.5}"/>`;
+  }
+
+  // Clock-time labels every 2 personal hours
+  function ringLabel(ms) {
+    const s = new Date(ms).toLocaleTimeString('en-US',
+      { hour:'numeric', minute:'2-digit', hour12:true, timeZone: CONFIG.tz });
+    const parts  = s.split(' ');
+    const period = parts[1] || '';
+    const suf    = period[0] || '';
+    const [h, m] = parts[0].split(':');
+    if (h === '12' && m === '00') return period === 'PM' ? 'Noon' : 'Midn';
+    return m === '00' ? `${h}${suf}` : `${h}:${m}${suf}`;
+  }
+
+  for (let n = 0; n <= Math.floor(tau); n += 2) {
+    let label, fontSize, fillColor, fontWeight;
+    if (n === 0) {
+      label = ringLabel(anchorMs);
+      fontSize = '8'; fillColor = '#c9a84c'; fontWeight = '600';
+    } else {
+      const clockH = ((wakeHour + n) % 24 + 24) % 24;
+      const isNoon     = Math.abs(clockH - 12) < 0.5;
+      const isMidnight = clockH < 0.5 || clockH > 23.5;
+      if (isNoon) {
+        label = 'Noon'; fontSize = '7.5'; fillColor = '#c9a84c'; fontWeight = '600';
+      } else if (isMidnight) {
+        label = 'Midn'; fontSize = '7.5'; fillColor = '#c9a84c'; fontWeight = '600';
+      } else {
+        const ch  = Math.round(clockH);
+        const h12 = ch % 12 || 12;
+        label = h12 + (ch < 12 ? 'A' : 'P'); fontSize = '8.5'; fillColor = '#606060'; fontWeight = '400';
+      }
+    }
+    const [lx,ly] = pol(nToA(n), R2 + 17);
+    html += `<text x="${lx}" y="${ly}" font-size="${fontSize}" fill="${fillColor}" font-weight="${fontWeight}" text-anchor="middle" dominant-baseline="middle" font-family="Inter,sans-serif">${label}</text>`;
+  }
+
+  // Sunrise / Sunset position labels
+  const nSunrise = ((sunrise - wakeHour) % 24 + 24) % 24;
+  const nSunset  = ((sunset  - wakeHour) % 24 + 24) % 24;
+  [[nSunrise, 'Sunrise'], [nSunset, 'Sunset']].forEach(([n, lbl]) => {
+    if (n < tau) {
+      const [lx,ly] = pol(nToA(n), R2 + 17);
+      html += `<text x="${lx}" y="${ly}" font-size="7" fill="#c49820" font-weight="500" text-anchor="middle" dominant-baseline="middle" font-family="Inter,sans-serif">${lbl}</text>`;
+    }
+  });
+
+  // Wake tick at top
+  const [wt1x,wt1y] = pol(0, R1 - 1);
+  const [wt2x,wt2y] = pol(0, R2 + 1);
+  html += `<line x1="${wt1x}" y1="${wt1y}" x2="${wt2x}" y2="${wt2y}" stroke="rgba(201,168,76,0.5)" stroke-width="1.5"/>`;
+
+  g.innerHTML = html;
+}
+
+// ── Draw: pie chart ─────────────────────────────────────────────────────────
+function drawPieChart(anchorMs) {
+  const g = document.getElementById('pie-ring');
+  if (!g) return;
+  const tau    = CONFIG.tau;
+  const awakeH = CONFIG.awakeH;
+  const CX = 220, CY = 220, RI = 5, RO = 168;
+  const DEG = 360 / tau;
+
+  function pol(deg, r) {
+    const rad = deg * Math.PI / 180;
+    return [+(CX + r * Math.sin(rad)).toFixed(2), +(CY - r * Math.cos(rad)).toFixed(2)];
+  }
+  // Inline donut-path helper (sector between ri and ro)
+  function sector(a1, a2, ri, ro) {
+    const large = (a2 - a1) >= 180 ? 1 : 0;
+    const [x1o,y1o] = pol(a1, ro); const [x2o,y2o] = pol(a2 - 0.01, ro);
+    const [x1i,y1i] = pol(a1, ri); const [x2i,y2i] = pol(a2 - 0.01, ri);
+    return `M ${x1o} ${y1o} A ${ro} ${ro} 0 ${large} 1 ${x2o} ${y2o} L ${x2i} ${y2i} A ${ri} ${ri} 0 ${large} 0 ${x1i} ${y1i} Z`;
+  }
+
+  const { h_into, wakeMs } = cyclePos(anchorMs, Date.now());
+  const wakeHour = localHour(wakeMs);
+  const { sunrise, sunset } = sunTimes(new Date(wakeMs));
+  const STEP = 0.25; // sub-slice interval in personal hours
+
+  const segments = buildSegments(tau, awakeH);
+  let svg = '';
+  let cumH = 0;
+  let sleepLabelAngle = null;
+
+  for (const seg of segments) {
+    const segStart = cumH;
+    const segEnd   = cumH + seg.hours;
+    const dFull    = sector(segStart * DEG, segEnd * DEG, RI, RO);
+
+    // Sub-slice every 0.25h — each slice gets its own accurate sky color.
+    // This prevents a long segment (e.g. 12h sleep) from rendering as one flat color.
+    let h = segStart;
+    while (h < segEnd) {
+      const hNext  = Math.min(h + STEP, segEnd);
+      const midH   = (h + hNext) / 2;
+      const clockH = ((wakeHour + midH) % 24 + 24) % 24;
+      svg += `<path d="${sector(h * DEG, hNext * DEG, RI, RO)}" fill="${skyColorAt(clockH, sunrise, sunset)}" stroke="none"/>`;
+      h = hNext;
+    }
+
+    if (seg.type === 'sleep') {
+      svg += `<path d="${dFull}" fill="url(#pie-sleep-stars)" stroke="none"/>`;
+      sleepLabelAngle = (segStart + segEnd) / 2 * DEG;
+    }
+    // Segment border over the color fill
+    svg += `<path d="${dFull}" fill="none" stroke="#1a1a1a" stroke-width="0.5"/>`;
+    cumH = segEnd;
+  }
+
+  if (sleepLabelAngle !== null) {
+    const [lx, ly] = pol(sleepLabelAngle, 90);
+    const sa = `x="${lx}" y="${ly}" font-size="26" font-weight="700" text-anchor="middle" dominant-baseline="middle" font-family="Inter,sans-serif" letter-spacing="2"`;
+    svg += `<text ${sa} fill="none" stroke="#06090f" stroke-width="5" stroke-linejoin="round">Sleep</text>`;
+    svg += `<text ${sa} fill="#c49820">Sleep</text>`;
+  }
+
+  // "You are here" gold arc at current cycle position
+  const nowAngle = h_into * DEG;
+  const arcSpan  = 8;
+  svg += `<path d="${sector(nowAngle - arcSpan/2, nowAngle + arcSpan/2, RO - 14, RO - 2)}" fill="rgba(201,168,76,0.95)" stroke="none"/>`;
+
+  g.innerHTML = svg;
+}
+
+// ── Live update (runs every 15 min) ─────────────────────────────────────────
+function updateNow(anchorMs) {
+  if (!anchorMs) return;
+  const { h_into, wakeMs, sleepMs, nwakeMs, asleep } = cyclePos(anchorMs, Date.now());
+
+  drawPieChart(anchorMs);
+
+  // Current-time dot on outer ring
+  const rAngle = (h_into / CONFIG.tau) * 360;
+  const rRad   = rAngle * Math.PI / 180;
+  const rMid = 182, rOuter = 207;
+  const dx = Math.sin(rRad), dy = -Math.cos(rRad);
+  const dot = document.getElementById('orn-dot');
+  const lbl = document.getElementById('orn-lbl');
+  if (dot) { dot.setAttribute('cx', (220+rMid*dx).toFixed(1)); dot.setAttribute('cy', (220+rMid*dy).toFixed(1)); }
+  if (lbl) {
+    lbl.setAttribute('x', (220+rOuter*dx).toFixed(1));
+    lbl.setAttribute('y', (220+rOuter*dy).toFixed(1));
+    lbl.textContent = fmtLocalCompact(Date.now());
+  }
+
+  // Hand (gold = awake, indigo = rest)
+  const deg = (h_into / CONFIG.tau) * 360;
+  const rad  = (deg - 90) * Math.PI / 180;
+  const hx = 220 + 144 * Math.cos(rad), hy = 220 + 144 * Math.sin(rad);
+  const col = asleep ? '#3d42a0' : '#c9a84c';
+  const hl = document.getElementById('hand-line');
+  const hd = document.getElementById('hand-dot');
+  if (hl) { hl.setAttribute('x2', hx.toFixed(1)); hl.setAttribute('y2', hy.toFixed(1)); hl.setAttribute('stroke', col); }
+  if (hd) { hd.setAttribute('cx', hx.toFixed(1)); hd.setAttribute('cy', hy.toFixed(1)); hd.setAttribute('fill', col); }
+
+  // Stats card
+  const statsEl = document.getElementById('stats-card');
+  if (statsEl) {
+    statsEl.style.display = '';
+    if (asleep) {
+      statsEl.innerHTML =
+        `<div class="nc-row"><span class="nc-lbl">Rest window opened</span><span class="nc-val">${fmtLocalFull(sleepMs)}</span></div>` +
+        `<div class="nc-row"><span class="nc-lbl">Next wake (est.)</span><span class="nc-val">${fmtLocalFull(nwakeMs)}</span></div>` +
+        `<div class="nc-row"><span class="nc-lbl">In rest window for</span><span class="nc-val">${fmtHM(h_into - CONFIG.awakeH)}</span></div>`;
+    } else {
+      statsEl.innerHTML =
+        `<div class="nc-row"><span class="nc-lbl">Awake since</span><span class="nc-val">${fmtLocalFull(wakeMs)}</span></div>` +
+        `<div class="nc-row"><span class="nc-lbl">Rest window opens</span><span class="nc-val">${fmtLocalFull(sleepMs)}</span></div>` +
+        `<div class="nc-row"><span class="nc-lbl">${fmtHM(h_into)} into cycle</span><span class="nc-val">${fmtLocalFull(nwakeMs)} next wake</span></div>`;
+    }
+  }
+}
+
+// ── Full render ──────────────────────────────────────────────────────────────
+function renderAll() {
+  if (!ANCHOR_MS) return;
+
+  document.getElementById('wheel-section').style.display = '';
+  document.getElementById('no-state-prompt').style.display = 'none';
+
+  drawOuterClock(ANCHOR_MS);
+  updateNow(ANCHOR_MS);
+
+  if (_liveTimer) clearInterval(_liveTimer);
+  _liveTimer = setInterval(() => updateNow(ANCHOR_MS), 900000);
+}
+
+// ── Inputs ───────────────────────────────────────────────────────────────────
+function onInputChange() {
+  const dateVal = document.getElementById('wake-date').value;
+  const timeVal = document.getElementById('wake-time').value;
+  if (!dateVal || !timeVal) return;
+  ANCHOR_MS = new Date(`${dateVal}T${timeVal}:00`).getTime();
+  saveState();
+  renderAll();
+}
+
+function onTauChange(tau) {
+  CONFIG.tau = tau;
+  if (!_awakeManuallySet) {
+    CONFIG.awakeH = awakeFromTau(tau);
+  } else {
+    const minA = Math.max(4, tau * 0.25);
+    const maxA = tau - 2;
+    CONFIG.awakeH = Math.max(minA, Math.min(maxA, CONFIG.awakeH));
+  }
+  updateSliderBounds();
+  updateSleepLabels();
+  const ti = document.getElementById('tau-input');
+  if (ti) ti.value = tau.toFixed(1);
+  saveState();
+  if (ANCHOR_MS) renderAll();
+}
+
+// ── Tau input + preset chips ──────────────────────────────────────────────────
+function initTauInput() {
+  const tauInput = document.getElementById('tau-input');
+  const presets  = document.querySelectorAll('.preset-btn');
+
+  tauInput.addEventListener('input', e => {
+    const tau = parseFloat(e.target.value);
+    if (isNaN(tau) || tau < 23.0 || tau > 27.0) return;
+    presets.forEach(b => b.classList.remove('active'));
+    const match = Array.from(presets).find(b => Math.abs(parseFloat(b.dataset.tau) - tau) < 0.01);
+    if (match) match.classList.add('active');
+    onTauChange(tau);
+  });
+
+  presets.forEach(btn => {
+    btn.addEventListener('click', () => {
+      presets.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tau = parseFloat(btn.dataset.tau);
+      tauInput.value = tau.toFixed(1);
+      onTauChange(tau);
+    });
+  });
+}
+
+function initSlider() {
+  const slider = document.getElementById('awake-slider');
+  updateSliderBounds();
+  updateSleepLabels();
+  slider.addEventListener('input', e => onAwakeChange(parseFloat(e.target.value)));
+}
+
+// ── Persistence ──────────────────────────────────────────────────────────────
+const STATE_KEY = 'circadian_public_v1';
+
+function saveState() {
+  if (!ANCHOR_MS) return;
+  const payload = { t: ANCHOR_MS, tau: CONFIG.tau };
+  if (_awakeManuallySet) payload.awakeH = CONFIG.awakeH;
+  try { localStorage.setItem(STATE_KEY, JSON.stringify(payload)); } catch {}
+  updateHash();
+}
+
+function loadState() {
+  // URL hash wins over localStorage
+  const hash = location.hash.slice(1);
+  if (hash) {
+    const p     = new URLSearchParams(hash);
+    const t     = parseInt(p.get('t'), 10);
+    const tau   = parseFloat(p.get('tau'));
+    const awake = parseFloat(p.get('awake'));
+    if (t && !isNaN(t) && isFinite(t)) {
+      ANCHOR_MS = t;
+      if (!isNaN(tau) && tau >= 23.0 && tau <= 27.0) {
+        CONFIG.tau    = tau;
+        CONFIG.awakeH = awakeFromTau(tau);
+      }
+      if (!isNaN(awake) && awake >= 4 && awake < CONFIG.tau - 1) {
+        CONFIG.awakeH     = awake;
+        _awakeManuallySet = true;
+      }
+      return true;
+    }
+  }
+  try {
+    const raw = localStorage.getItem(STATE_KEY);
+    if (raw) {
+      const { t, tau, awakeH } = JSON.parse(raw);
+      if (t && isFinite(t)) {
+        ANCHOR_MS = t;
+        if (tau && tau >= 23.0 && tau <= 27.0) {
+          CONFIG.tau    = tau;
+          CONFIG.awakeH = awakeFromTau(tau);
+        }
+        if (awakeH && awakeH >= 4 && awakeH < CONFIG.tau - 1) {
+          CONFIG.awakeH     = awakeH;
+          _awakeManuallySet = true;
+        }
+        return true;
+      }
+    }
+  } catch {}
+  return false;
+}
+
+function updateHash() {
+  if (!ANCHOR_MS) return;
+  const h = `t=${ANCHOR_MS}&tau=${CONFIG.tau}` +
+            (_awakeManuallySet ? `&awake=${CONFIG.awakeH}` : '');
+  history.replaceState(null, '', '#' + h);
+}
+
+// ── Share ─────────────────────────────────────────────────────────────────────
+function doShare() {
+  if (!ANCHOR_MS) {
+    alert('Enter your wake time first to generate a shareable link.');
+    return;
+  }
+  updateHash();
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(location.href).then(() => {
+      const btn = document.getElementById('share-btn');
+      if (btn) { const t = btn.textContent; btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = t, 2000); }
+    });
+  }
+}
+
+// ── Geolocation ───────────────────────────────────────────────────────────────
+function tryGeolocation() {
+  if (!navigator.geolocation) {
+    showLocationLine('approximate default location');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    CONFIG.lat = pos.coords.latitude;
+    CONFIG.lng = pos.coords.longitude;
+    const name = await reverseGeocode(CONFIG.lat, CONFIG.lng);
+    showLocationLine(name);
+    if (ANCHOR_MS) renderAll();
+  }, () => {
+    showLocationLine('approximate default location');
+  }, { timeout: 5000, maximumAge: 3600000 });
+}
+
+// ── Restore inputs from loaded state ─────────────────────────────────────────
+function restoreInputsFromState() {
+  const { dateStr, timeStr } = msToLocalDateTime(ANCHOR_MS);
+  document.getElementById('wake-date').value = dateStr;
+  document.getElementById('wake-time').value = timeStr;
+
+  document.getElementById('tau-input').value = CONFIG.tau.toFixed(1);
+  const presets = document.querySelectorAll('.preset-btn');
+  presets.forEach(b => b.classList.remove('active'));
+  const match = Array.from(presets).find(b => Math.abs(parseFloat(b.dataset.tau) - CONFIG.tau) < 0.01);
+  if (match) match.classList.add('active');
+
+  updateSliderBounds();
+  updateSleepLabels();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function init() {
+  const now  = new Date();
+  const yyyy = now.getFullYear();
+  const mm   = String(now.getMonth() + 1).padStart(2, '0');
+  const dd   = String(now.getDate()).padStart(2, '0');
+  document.getElementById('wake-date').value = `${yyyy}-${mm}-${dd}`;
+
+  initTauInput();
+  initSlider();
+
+  const hadState = loadState();
+  if (hadState && ANCHOR_MS) {
+    restoreInputsFromState();
+    renderAll();
+  }
+
+  document.getElementById('wake-date').addEventListener('change', onInputChange);
+  document.getElementById('wake-time').addEventListener('change', onInputChange);
+  document.getElementById('share-btn').addEventListener('click', doShare);
+
+  tryGeolocation();
+}
+
+init();
+</script>
+</body>
+</html>
